@@ -30,6 +30,7 @@
 
 library(archive)     # Leer archivos ZIP sin descargarlos
 library(dplyr)       # Manejo de datos
+library(igraph)      # Manejo de grafos
 
 # ------------------------------------- CARGA DE DATOS ---------------------------------------------
 # Todas las URLs de acceso a archivos se dejan en un txt aparte para automatizar la ingesta de datos
@@ -62,7 +63,7 @@ con <- archive_read(GTFS,
 trips <- read.csv(con)
 
 # READ -> Paradas y orden de las paradas de las rutas
-options(timeout = 120)
+options(timeout = 180)
 con <- archive_read(GTFS,
                     file = 'stop_times.txt',
                     format = 'zip')
@@ -129,3 +130,71 @@ stop.times$stop_id <- as.character(stop.times$stop_id)
 stop.times <- stop.times |>
   left_join(stops[,c("stop_id", "stop_name")],
             by = c("stop_id" = "stop_id"))
+
+
+# FINAL DATABASE -> ESTACIONES
+stops <- stops |>
+  select(stop_name, stop_lat, stop_lon, stop_id) |>
+  filter(stop_id %in% unique(stop.times$stop_id))
+
+colnames(stops) <- c('name', 'latitude', 'longitude', 'id')
+
+# FINAL DATABASE -> RUTAS
+routes <- routes |>
+  select(route_short_name, route_long_name, route_id, route_color)
+colnames(routes) <- c('short name', 'long name', 'id', 'color')
+
+# FINAL DATABASE -> GRAFO DE RUTAS
+
+# Aristas
+tm.edges <- stop.times |>
+  arrange(stop_sequence) |>
+  group_by(route_id, route_short_name) |>
+  summarise(stops = list(stop_id),
+            .groups = "drop")
+
+tm.edges <- apply(tm.edges, MARGIN = 1,
+                  function(x) {
+                    stops = x$stops
+                    edges = list()
+                    for (stop in 2:length(stops)){
+                      edges[[stop-1]] = c(stops[(stop-1):stop])
+                    }
+                    edges <- do.call(rbind, edges)
+
+                    edges <- cbind(edges, x$route_id, x$route_short_name)
+                    colnames(edges) <- c('out', 'in', 'id', 'name')
+                    edges
+                  }) |>
+  do.call(what = rbind)
+
+tm.edges <- tm.edges |>
+  as.data.frame() |>
+  group_by(out, `in`) |>
+  summarise('services' = list(id),
+            'services names' = list(name),
+            'weigth' = n(),
+            .groups = 'drop')
+
+
+# Vértices
+tm.graph <- make_empty_graph() |>
+  add_vertices(nv = nrow(stops),
+               attr = list(
+                 'name' = stops$id,
+                 'id' = stops$name,
+                 'latitude' = stops$latitude,
+                 'longitude' = stops$longitude
+               )) |>
+  add_edges(edges = tm.edges[,c("out", "in")] |> as.matrix() |> t() |>  c()) |>
+  set_edge_attr('weight', value = tm.edges$weigth)
+
+
+set.seed(1305)
+plot(tm.graph,
+     vertex.label = vertex.attributes(tm.graph)$id,
+     vertex.size = (degree(tm.graph)/33) * 20,
+     vertex.label.cex = 0.4,
+     edge.arrow.size = 0.1,
+     # edge.arrow.width = edges,
+     layout = layout_with_fr)
