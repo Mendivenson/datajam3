@@ -44,6 +44,10 @@ GTFS <- readLines('../data/GTFS.txt')
 
 
 # READ -> Ubicación, nombre e identificación de las estaciones y paradas
+con <- archive_read(GTFS,
+                    file = 'stops.txt',
+                    format = 'zip')
+stops <- read.csv(con)
 
 # READ -> Nombre, color, identificador, etc. de los servicios
 con <- archive_read(GTFS,
@@ -64,10 +68,64 @@ con <- archive_read(GTFS,
                     format = 'zip')
 stop.times <- read.csv(con)
 
-# FILTER ---> Servicios solamente pertenecientes al servicio troncal de TM. Dentro de los archivos
-#             de GTFS el archivo agency.txt describe los diferentes tipos de servicio y se asume que
-#             los IDs no van a cambiar por lo que 1 representa los servicios que son de las rutas
-#             troncales
-
+# FILTER -> Servicios solamente pertenecientes al servicio troncal de TM. Dentro de los archivos
+#           de GTFS el archivo agency.txt describe los diferentes tipos de servicio y se asume que
+#           los IDs no van a cambiar por lo que 1 representa los servicios que son de las rutas
+#           troncales
 routes <- routes |>
   filter(agency_id == '1')
+
+# FILTER ->  Remove unnecesary columns from  stop.times dataset
+stop.times <- stop.times |>
+  select(-arrival_time,-departure_time,-stop_headsign, -timepoint)
+
+# JOIN -> Uno de los principales líos con stop.times es que tiene listados varios servicios con el
+#         mismo nombre sin el ID del servicio, principalmente se hará acá.
+
+stop.times <- stop.times |>
+  left_join(trips[,c("trip_id", "route_id")], by = c('trip_id' = 'trip_id'))
+
+# JOIN -> En este punto, se sabe el id del servicio, pero no las demás características de la misma.
+#         Con el recién añadido route_id se mergea la información de los servicios con la información
+#         de los trips.
+
+stop.times <- stop.times |>
+  left_join(routes, by = c('route_id' = 'route_id'))
+
+# FILTER -> Como funciona el left join y como ya se habían filtrado solamente los servicios troncales
+#           las filas que tengan agency_id == NA son filas de servicios no troncales que hay que eliminar
+
+stop.times <- stop.times |>
+  filter(!is.na(agency_id))
+
+# DEDUP -> Hay más de un reporte por ruta dentro de la base de datos pues se reportan durante un
+#          periodo largo de tiempo los tiempos de llegada. Si eliminamos el id del trip debería ser
+#          suficiente para aproximar el grafo del servicio troncal de TM.
+
+stop.times <- stop.times |>
+  select(-trip_id) |>
+  distinct()
+
+# FILTER -> Drop useless columns
+stop.times <- stop.times  |>
+  select(-agency_id, -route_text_color, -route_type)
+
+# JOIN -> Los stop_id tiene granularidad por vagón por lo que se trae es el parent_id para obtener
+#         la ubicación de la estación solamente.
+
+stop.times <- stop.times |>
+  left_join(stops[,c("stop_id", "parent_station")],
+            by = c("stop_id" = "stop_id")) |>
+  select(-stop_id) |>
+  rename(c('stop_id' = 'parent_station'))
+
+# FILTER -> En términos prácticos solamente se usan las estaciones principales y no los vagones
+#           por lo que solo se usa un subset de paradas
+
+stops <- stops |>
+  filter(is.na(parent_station))
+
+stop.times$stop_id <- as.character(stop.times$stop_id)
+stop.times <- stop.times |>
+  left_join(stops[,c("stop_id", "stop_name")],
+            by = c("stop_id" = "stop_id"))
