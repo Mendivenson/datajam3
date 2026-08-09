@@ -1,0 +1,45 @@
+# .github/workflows/update_download_urls.yml
+name: Actualizar URLs de descarga TMSA
+
+on:
+  schedule:
+    # 05:00 UTC = 00:00 hora Colombia (UTC-5), todos los días
+    - cron: '0 5 * * *'
+  workflow_dispatch: {}   # permite correrlo manualmente desde la pestaña Actions
+
+permissions:
+  contents: write   # necesario para que el workflow pueda hacer commit y push
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - name: Instalar dependencias de R
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::rvest
+
+      - name: Correr script de scraping
+        run: Rscript code/get_downloads_url.R
+
+      - name: Commit y push si hay cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/*.csv
+          if git diff --staged --quiet; then
+            echo "Sin cambios en los CSV, no se hace commit."
+          else
+            git commit -m "Actualizar URLs de descarga TMSA [automated]"
+            git push
+          fi

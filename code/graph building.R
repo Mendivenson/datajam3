@@ -45,7 +45,6 @@ library(maptiles)
 
 GTFS <- readLines('../data/GTFS.txt')
 
-
 # READ -> Ubicación, nombre e identificación de las estaciones y paradas
 con <- archive_read(GTFS,
                     file = 'stops.txt',
@@ -207,27 +206,27 @@ plot(tm.graph,
                                 'y' = vertex.attributes(tm.graph)$longitude)))
 
 
-# WRITE: Se usa un formato estándar (GraphML) para guardar la información del grafo
-tm.graph_export <- tm.graph
+# # WRITE: Se usa un formato estándar (GraphML) para guardar la información del grafo
+# tm.graph_export <- tm.graph
+#
+# # Para poder guardar las listas se deben aplanar primero
+# if ("services" %in% edge_attr_names(tm.graph_export)) {
+#   edge_attr(tm.graph_export, "services_flat") <- sapply(
+#     edge_attr(tm.graph_export, "services"),
+#     paste, collapse = ";"
+#   )
+#   tm.graph_export <- delete_edge_attr(tm.graph_export, "services")
+# }
+# if ("services names" %in% edge_attr_names(tm.graph_export)) {
+#   edge_attr(tm.graph_export, "services_names_flat") <- sapply(
+#     edge_attr(tm.graph_export, "services names"),
+#     paste, collapse = ";"
+#   )
+#   tm.graph_export <- delete_edge_attr(tm.graph_export, "services names")
+# }
 
-# Para poder guardar las listas se deben aplanar primero
-if ("services" %in% edge_attr_names(tm.graph_export)) {
-  edge_attr(tm.graph_export, "services_flat") <- sapply(
-    edge_attr(tm.graph_export, "services"),
-    paste, collapse = ";"
-  )
-  tm.graph_export <- delete_edge_attr(tm.graph_export, "services")
-}
-if ("services names" %in% edge_attr_names(tm.graph_export)) {
-  edge_attr(tm.graph_export, "services_names_flat") <- sapply(
-    edge_attr(tm.graph_export, "services names"),
-    paste, collapse = ";"
-  )
-  tm.graph_export <- delete_edge_attr(tm.graph_export, "services names")
-}
-
-write_graph(tm.graph_export, file = '../data/TM graph.graphml', format = 'graphml')
+# write_graph(tm.graph_export, file = '../data/TM graph.graphml', format = 'graphml')
 
 # READ: usando igraph se puede leer nuevamente el grafo
-rm(list = ls())
-tm.graph = read_graph(file = '../data/TM graph.graphml', format = 'graphml')
+# rm(list = ls())
+# tm.graph = read_graph(file = '../data/TM graph.graphml', format = 'graphml')
