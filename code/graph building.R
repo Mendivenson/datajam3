@@ -31,6 +31,8 @@
 library(archive)     # Leer archivos ZIP sin descargarlos
 library(dplyr)       # Manejo de datos
 library(igraph)      # Manejo de grafos
+library(terra)       # Ploteo de mapas
+library(maptiles)
 
 # ------------------------------------- CARGA DE DATOS ---------------------------------------------
 # Todas las URLs de acceso a archivos se dejan en un txt aparte para automatizar la ingesta de datos
@@ -187,14 +189,45 @@ tm.graph <- make_empty_graph() |>
                  'longitude' = stops$longitude
                )) |>
   add_edges(edges = tm.edges[,c("out", "in")] |> as.matrix() |> t() |>  c()) |>
-  set_edge_attr('weight', value = tm.edges$weigth)
-
+  set_edge_attr('weight', value = tm.edges$weigth) |>
+  set_edge_attr('services', value = tm.edges$services) |>
+  set_edge_attr('services names', value = tm.edges$`services names`)
 
 set.seed(1305)
 plot(tm.graph,
      vertex.label = vertex.attributes(tm.graph)$id,
+     vertex.color = 'gray85',
+     vertex.frame.color = 'gray85',
      vertex.size = (degree(tm.graph)/33) * 20,
-     vertex.label.cex = 0.4,
+     vertex.label.cex = 0.5,
      edge.arrow.size = 0.1,
-     # edge.arrow.width = edges,
-     layout = layout_with_fr)
+     edge.width = 5 * edge.attributes(tm.graph)$weight/10,
+     edge.color = 'black',
+     layout = norm_coords(cbind('x' = vertex.attributes(tm.graph)$latitude,
+                                'y' = vertex.attributes(tm.graph)$longitude)))
+
+
+# WRITE: Se usa un formato estándar (GraphML) para guardar la información del grafo
+tm.graph_export <- tm.graph
+
+# Para poder guardar las listas se deben aplanar primero
+if ("services" %in% edge_attr_names(tm.graph_export)) {
+  edge_attr(tm.graph_export, "services_flat") <- sapply(
+    edge_attr(tm.graph_export, "services"),
+    paste, collapse = ";"
+  )
+  tm.graph_export <- delete_edge_attr(tm.graph_export, "services")
+}
+if ("services names" %in% edge_attr_names(tm.graph_export)) {
+  edge_attr(tm.graph_export, "services_names_flat") <- sapply(
+    edge_attr(tm.graph_export, "services names"),
+    paste, collapse = ";"
+  )
+  tm.graph_export <- delete_edge_attr(tm.graph_export, "services names")
+}
+
+write_graph(tm.graph_export, file = '../data/TM graph.graphml', format = 'graphml')
+
+# READ: usando igraph se puede leer nuevamente el grafo
+rm(list = ls())
+tm.graph = read_graph(file = '../data/TM graph.graphml', format = 'graphml')
