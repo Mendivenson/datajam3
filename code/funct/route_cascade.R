@@ -1,0 +1,97 @@
+edge_load <- function(graph, demand = NULL){
+
+  # Carga de cada tramo: intermediación de arista (topología pura). Si se pasa 'demand' (vector
+  # nombrado por id de estación, ej. validaciones + salidas totales de station_stress()), la carga
+  # se escala por la demanda promedio (media geométrica) de las dos estaciones extremo del tramo.
+  # OJO: esto es una aproximación, no la intermediación exacta pesada por pares origen-destino
+  # (que requeriría enumerar caminos más cortos con su multiplicidad, mucho más costoso).
+
+  carga <- igraph::edge_betweenness(graph, directed = TRUE, weights = NA)
+
+  if (!is.null(demand)) {
+    extremos        <- igraph::ends(graph, igraph::E(graph), names = TRUE)
+    demanda.origen  <- demand[extremos[, 1]]
+    demanda.destino <- demand[extremos[, 2]]
+    carga <- carga * sqrt(demanda.origen * demanda.destino)
+  }
+
+  return(carga)
+}
+
+route_cascade <- function(graph, route.id, alpha = 0.2, demand = NULL){
+
+  # Simula el efecto de eliminar una ruta sobre la red, incluyendo posibles fallas en cadena
+  # (adaptación de Motter & Lai, 2002): se calcula la carga inicial de cada tramo y se le asigna una
+  # capacidad = (1 + alpha) * carga inicial. Se elimina la ruta y se recalcula la carga en el grafo
+  # reducido; cualquier tramo que supere su capacidad también falla (se elimina), y se repite hasta
+  # que no haya más fallas nuevas.
+
+  carga.inicial <- edge_load(graph, demand)
+  capacidad     <- (1 + alpha) * carga.inicial
+  clave.original <- apply(igraph::ends(graph, igraph::E(graph), names = TRUE), 1, paste, collapse = ' -> ')
+
+  grafo.actual   <- remove_route(graph, route.id)
+  aristas.caidas <- 0
+
+  repetir <- TRUE
+  while (repetir) {
+    carga.actual    <- edge_load(grafo.actual, demand)
+    clave.actual    <- apply(igraph::ends(grafo.actual, igraph::E(grafo.actual), names = TRUE), 1, paste, collapse = ' -> ')
+    capacidad.actual <- capacidad[match(clave.actual, clave.original)]
+
+    sobrecargadas <- which(carga.actual > capacidad.actual)
+
+    if (length(sobrecargadas) == 0) {
+      repetir <- FALSE
+    } else {
+      aristas.caidas <- aristas.caidas + length(sobrecargadas)
+      grafo.actual   <- igraph::delete_edges(grafo.actual, sobrecargadas)
+    }
+  }
+
+  componentes <- igraph::components(grafo.actual, mode = 'weak')
+
+  return(list(
+    'grafo final'          = grafo.actual,
+    'aristas caidas'       = aristas.caidas,
+    'tamaño componente'    = max(componentes$csize) / igraph::vcount(graph)
+  ))
+}
+
+critical_alpha <- function(graph, route.id, demand = NULL, umbral = 0.05,
+                           alpha.min = 0, alpha.max = 3, tol = 0.01, max.iter = 30){
+
+  # Búsqueda binaria del margen de tolerancia crítico (alpha_c): el valor más pequeño de alpha para
+  # el cual, al quitar la ruta, la cascada de fallas NO supera 'umbral' (fracción de tramos caídos
+  # sobre el total de tramos). Asume que a mayor alpha la cascada es igual o menor (más margen de
+  # capacidad solo puede absorber más carga, nunca menos).
+
+  n.tramos <- igraph::ecount(graph)
+
+  colapsa <- function(a) {
+    resultado <- route_cascade(graph, route.id, alpha = a, demand = demand)
+    (resultado$`aristas caidas` / n.tramos) > umbral
+  }
+
+  if (!colapsa(alpha.min)) {
+    return(list('alpha_c' = alpha.min, 'nota' = 'No hay cascada relevante ni con alpha.min.'))
+  }
+
+  if (colapsa(alpha.max)) {
+    message('La ruta ', route.id, ' sigue en cascada incluso con alpha.max = ', alpha.max,
+            '; el umbral crítico está por fuera del rango explorado.')
+    return(list('alpha_c' = NA, 'nota' = paste('alpha_c >', alpha.max)))
+  }
+
+  bajo <- alpha.min
+  alto <- alpha.max
+  iteracion <- 0
+
+  while ((alto - bajo) > tol && iteracion < max.iter) {
+    medio <- (bajo + alto) / 2
+    if (colapsa(medio)) bajo <- medio else alto <- medio
+    iteracion <- iteracion + 1
+  }
+
+  return(list('alpha_c' = alto, 'iteraciones' = iteracion))
+}
