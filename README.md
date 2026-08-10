@@ -1,5 +1,9 @@
 # datajam3 — Grafo dirigido del sistema troncal de TransMilenio
 
+![R](https://img.shields.io/badge/R-276DC3?style=flat&logo=r&logoColor=white)
+![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
+![Status](https://img.shields.io/badge/status-en%20desarrollo-yellow)
+
 Proyecto para el **DataJam**: modelar el sistema troncal de TransMilenio (Bogotá) como un **grafo dirigido**, donde los nodos son estaciones y las aristas son los tramos servidos por al menos una ruta troncal, ponderados por la cantidad de servicios que los cubren.
 
 El objetivo final combina tres ejes de análisis sobre ese grafo:
@@ -72,6 +76,13 @@ install.packages(c("archive", "dplyr", "igraph", "terra", "maptiles",
 - [ ] Scoring de criticidad de rutas (estructural + demanda + redundancia + social)
 - [ ] Visualización final integrando todos los componentes
 
-## Licencia de los datos
+## Autores
+
+- [Mendivenson](https://github.com/Mendivenson)
+- [CapStat-ML](https://github.com/CapStat-ML)
+
+## Licencia
+
+Este proyecto está bajo licencia [MIT](LICENSE).
 
 Los datasets del portal de datos abiertos de Bogotá se usan bajo licencia Creative Commons Attribution 4.0.
