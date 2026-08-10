@@ -20,15 +20,23 @@ datajam3/
 │   ├── graph building.R              # Pipeline principal: GTFS -> grafo dirigido (igraph)
 │   ├── get_downloads_url.R           # Scraping de URLs de descarga diarias (TMSA)
 │   ├── build_social_context.R        # Corre el cruce espacial y guarda el CSV de estrato/localidad
+│   ├── descriptive_analysis.R        # Descriptivo básico y de red (grado, fuerza, centralidad, conectividad, agrupamiento)
+│   ├── build_route_proposals.R       # Ajusta ERGM + espacio latente y guarda candidatos a ruta nueva
 │   └── funct/
 │       ├── station_stress.R          # stop_stress(): demanda real (validaciones/salidas) por estación/hora
-│       └── station_social_context.R  # station_social_context(): estrato y localidad por estación
+│       ├── station_social_context.R  # station_social_context(): estrato y localidad por estación
+│       ├── null_graphs.R             # null_graphs(): réplicas del modelo de configuración (misma secuencia de grados)
+│       ├── robustness_index.R        # robustness_curve() / robustness_index(): robustez (Schneider et al., 2011)
+│       ├── remove_route.R            # remove_route(): quita una ruta del grafo (ajusta weight/services_flat)
+│       ├── route_cascade.R           # edge_load() / route_cascade() / critical_alpha(): cascada de fallas (Motter-Lai)
+│       └── link_prediction_data.R    # matriz de distancia, objeto network, ranking de pares sin tramo directo
 ├── data/
 │   ├── GTFS.txt                          # URL del ZIP GTFS vigente de TransMilenio
 │   ├── TM graph.graphml                  # Grafo exportado (nodos, aristas, pesos, servicios)
 │   ├── download url salidas.csv          # URLs diarias de archivos de salidas (auto-actualizado)
 │   ├── download url validaciones.csv     # URLs diarias de archivos de validaciones (auto-actualizado)
-│   └── estaciones estrato localidad.csv  # Estrato + localidad por estación
+│   ├── estaciones estrato localidad.csv  # Estrato + localidad por estación
+│   └── candidatos ruta nueva.csv         # Ranking de pares de estaciones sin tramo directo (ERGM + espacio latente)
 ├── archive/                           # Exploraciones de visualización (leaflet, maptiles) fuera del pipeline principal
 └── .github/workflows/
     └── update_download_urls.yml      # Cron diario que actualiza los CSV de URLs de descarga
@@ -58,13 +66,24 @@ Todas de acceso abierto:
 
    `build_social_context.R` corre la función y guarda el resultado en `data/estaciones estrato localidad.csv`.
 
+5. **`code/descriptive_analysis.R`** — descriptivo básico (tamaño del grafo, rutas distintas, distribución del peso de los tramos) y descriptivo de red siguiendo el marco del curso de Análisis Estadístico de Redes (Juan Sosa, UNAL): grado y fuerza, centralidad (intermediación, cercanía), conectividad (componentes, distancias, cliques) y agrupamiento (transitividad).
+
+6. **`code/funct/null_graphs.R`** / **`code/funct/robustness_index.R`** — infraestructura para comparar la robustez real de TM contra la esperable solo por su distribución de grado: `null_graphs()` genera réplicas del modelo de configuración (misma secuencia de grados de entrada/salida), y `robustness_curve()`/`robustness_index()` calculan el índice de robustez `R` (Schneider et al., 2011) ante remoción de estaciones. **Hallazgo**: TM es sistemáticamente menos robusto de lo esperable solo por su distribución de grado (`R` real muy por debajo del rango de 500 réplicas nulas) — la fragilidad viene de la forma específica de los corredores, no solo de cuántas rutas tiene cada estación.
+
+7. **`code/funct/remove_route.R`** / **`code/funct/route_cascade.R`** — simulación de cascada de fallas (adaptación de Motter & Lai, 2002) al eliminar una ruta: `remove_route()` la quita del grafo, `route_cascade()` redistribuye la carga (intermediación de arista, opcionalmente pesada por demanda) y hace fallar los tramos que superan su capacidad, y `critical_alpha()` encuentra por búsqueda binaria el margen de tolerancia mínimo para que no se desate una cascada grande. **Hallazgo**: las rutas más "peligrosas" bajo este modelo no son las de mayor centralidad clásica, sino rutas cortas que actúan como válvula de escape del sistema.
+
+8. **`code/funct/link_prediction_data.R`** / **`code/build_route_proposals.R`** — propone rutas nuevas con respaldo estadístico: se ajustan un ERGM y un modelo de espacio latente (`ergm`/`latentnet`) sobre la versión no dirigida del grafo, con distancia geográfica, diferencia de estrato y coincidencia de localidad como covariables. Ambos modelos coinciden en que la distancia y la localidad predicen fuertemente la conectividad, mientras que la diferencia de estrato no es significativa. El resultado combinado (pares de estaciones sin tramo directo, ordenados por probabilidad predicha) queda en `data/candidatos ruta nueva.csv`.
+
+   *Nota metodológica pendiente*: el estrato se trata como variable numérica (`absdiff`) en ambos modelos, lo que asume intervalos iguales entre categorías aunque es una variable ordinal; queda por decidir si vale la pena usar `nodematch` o una agrupación categórica en su lugar.
+
 ## Requisitos
 
 Paquetes de R usados en el proyecto:
 
 ```r
 install.packages(c("archive", "dplyr", "igraph", "terra", "maptiles",
-                   "sf", "rvest", "pbapply", "leaflet", "htmltools"))
+                   "sf", "rvest", "pbapply", "leaflet", "htmltools",
+                   "network", "ergm", "latentnet"))
 ```
 
 ## Estado actual
@@ -72,8 +91,11 @@ install.packages(c("archive", "dplyr", "igraph", "terra", "maptiles",
 - [x] Construcción del grafo dirigido base a partir de GTFS
 - [x] Ingesta automatizada (diaria) de demanda real (validaciones/salidas)
 - [x] Componente social: estrato y localidad por estación
-- [ ] Simulación de impacto al agregar/eliminar rutas (robustez de red)
-- [ ] Scoring de criticidad de rutas (estructural + demanda + redundancia + social)
+- [x] Descriptivo básico y de red (grado, fuerza, centralidad, conectividad, agrupamiento)
+- [x] Modelo nulo + índice de robustez ante remoción de estaciones
+- [x] Simulación de cascada de fallas al eliminar una ruta (Motter-Lai)
+- [x] Propuesta de rutas nuevas con respaldo estadístico (ERGM + espacio latente)
+- [ ] Scoring de criticidad de rutas combinando todos los componentes anteriores
 - [ ] Visualización final integrando todos los componentes
 
 ## Autores
