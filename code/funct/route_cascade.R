@@ -35,14 +35,21 @@ route_cascade <- function(graph, route.id, alpha = 0.2, demand = NULL){
   # reducido; cualquier tramo que supere su capacidad también falla (se elimina), y se repite hasta
   # que no haya más fallas nuevas.
   #
-  # OJO: la capacidad SIEMPRE se calcula sin ponderar por demanda (es una propiedad estructural del
-  # tramo, no depende de cuánta gente lo usa), mientras que la carga durante la cascada sí se pondera
-  # por demanda si se pasa. Si ambas se ponderaran por el mismo factor de demanda (fijo para un tramo
-  # dado, porque sus estaciones extremo no cambian), ese factor se cancelaría en la comparación
-  # carga > capacidad y la demanda nunca podría cambiar el resultado de la cascada.
+  # OJO: la capacidad queda anclada a la magnitud de la intermediación (para no desajustar la
+  # escala frente a 'carga.actual', que también se mide en esas unidades), pero se modula por
+  # 'weight' (cuántas rutas ya sirven el tramo) relativizado por su promedio: un tramo con más
+  # rutas que el promedio recibe proporcionalmente más margen de capacidad, y uno con menos,
+  # proporcionalmente menos. 'weight' es la medida directa de capacidad instalada (servicio real),
+  # mientras que la intermediación por sí sola es ciega a cuánto servicio ya tiene cada tramo.
+  # Además, la capacidad nunca se pondera por demanda (es una propiedad de la infraestructura, no
+  # depende de cuánta gente la usa), mientras que la carga durante la cascada sí se pondera por
+  # demanda si se pasa. Si ambas usaran el mismo factor de demanda (fijo para un tramo dado, porque
+  # sus estaciones extremo no cambian), ese factor se cancelaría en la comparación carga > capacidad
+  # y la demanda nunca podría cambiar el resultado de la cascada.
 
-  carga.inicial <- edge_load(graph)
-  capacidad     <- (1 + alpha) * carga.inicial
+  peso.relativo       <- igraph::edge_attr(graph, 'weight') / mean(igraph::edge_attr(graph, 'weight'))
+  capacidad.instalada <- edge_load(graph) * peso.relativo
+  capacidad           <- (1 + alpha) * capacidad.instalada
   clave.original <- apply(igraph::ends(graph, igraph::E(graph), names = TRUE), 1, paste, collapse = ' -> ')
 
   grafo.actual   <- remove_route(graph, route.id)

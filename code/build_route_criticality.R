@@ -32,11 +32,11 @@ demanda           <- station_demand()
 # ------------------------------------- ALPHA CRÍTICO POR RUTA ---------------------------------------------
 
 alpha.topologico <- pbsapply(rutas.disponibles, function(r) {
-  tryCatch(critical_alpha(tm.graph, r)$alpha_c, error = function(e) NA)
+  tryCatch(critical_alpha(tm.graph, r, alpha.max = 6)$alpha_c, error = function(e) NA)
 })
 
 alpha.demanda <- pbsapply(rutas.disponibles, function(r) {
-  tryCatch(critical_alpha(tm.graph, r, demand = demanda, alpha.max = 5)$alpha_c, error = function(e) NA)
+  tryCatch(critical_alpha(tm.graph, r, demand = demanda, alpha.max = 6)$alpha_c, error = function(e) NA)
 })
 
 # ------------------------------------- TABLA COMBINADA ---------------------------------------------
