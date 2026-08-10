@@ -22,13 +22,16 @@ datajam3/
 │   ├── build_social_context.R        # Corre el cruce espacial y guarda el CSV de estrato/localidad
 │   ├── descriptive_analysis.R        # Descriptivo básico y de red (grado, fuerza, centralidad, conectividad, agrupamiento)
 │   ├── build_route_proposals.R       # Ajusta ERGM + espacio latente y guarda candidatos a ruta nueva
+│   ├── build_route_criticality.R     # Corre critical_alpha() (topológico y por demanda) sobre las 111 rutas
 │   └── funct/
 │       ├── station_stress.R          # stop_stress(): demanda real (validaciones/salidas) por estación/hora
+│       ├── station_demand.R          # station_demand(): agrega demanda por estación (con crosswalk TMSA↔GTFS)
 │       ├── station_social_context.R  # station_social_context(): estrato y localidad por estación
 │       ├── null_graphs.R             # null_graphs(): réplicas del modelo de configuración (misma secuencia de grados)
 │       ├── robustness_index.R        # robustness_curve() / robustness_index(): robustez (Schneider et al., 2011)
 │       ├── remove_route.R            # remove_route(): quita una ruta del grafo (ajusta weight/services_flat)
 │       ├── route_cascade.R           # edge_load() / route_cascade() / critical_alpha(): cascada de fallas (Motter-Lai)
+│       ├── route_utils.R             # route_name() / route_edge_count()
 │       └── link_prediction_data.R    # matriz de distancia, objeto network, ranking de pares sin tramo directo
 ├── data/
 │   ├── GTFS.txt                          # URL del ZIP GTFS vigente de TransMilenio
@@ -36,7 +39,8 @@ datajam3/
 │   ├── download url salidas.csv          # URLs diarias de archivos de salidas (auto-actualizado)
 │   ├── download url validaciones.csv     # URLs diarias de archivos de validaciones (auto-actualizado)
 │   ├── estaciones estrato localidad.csv  # Estrato + localidad por estación
-│   └── candidatos ruta nueva.csv         # Ranking de pares de estaciones sin tramo directo (ERGM + espacio latente)
+│   ├── candidatos ruta nueva.csv         # Ranking de pares de estaciones sin tramo directo (ERGM + espacio latente)
+│   └── criticidad rutas.csv              # alpha_c topológico y ponderado por demanda para las 111 rutas
 ├── archive/                           # Exploraciones de visualización (leaflet, maptiles) fuera del pipeline principal
 └── .github/workflows/
     └── update_download_urls.yml      # Cron diario que actualiza los CSV de URLs de descarga
@@ -70,11 +74,13 @@ Todas de acceso abierto:
 
 6. **`code/funct/null_graphs.R`** / **`code/funct/robustness_index.R`** — infraestructura para comparar la robustez real de TM contra la esperable solo por su distribución de grado: `null_graphs()` genera réplicas del modelo de configuración (misma secuencia de grados de entrada/salida), y `robustness_curve()`/`robustness_index()` calculan el índice de robustez `R` (Schneider et al., 2011) ante remoción de estaciones. **Hallazgo**: TM es sistemáticamente menos robusto de lo esperable solo por su distribución de grado (`R` real muy por debajo del rango de 500 réplicas nulas) — la fragilidad viene de la forma específica de los corredores, no solo de cuántas rutas tiene cada estación.
 
-7. **`code/funct/remove_route.R`** / **`code/funct/route_cascade.R`** — simulación de cascada de fallas (adaptación de Motter & Lai, 2002) al eliminar una ruta: `remove_route()` la quita del grafo, `route_cascade()` redistribuye la carga (intermediación de arista, opcionalmente pesada por demanda) y hace fallar los tramos que superan su capacidad, y `critical_alpha()` encuentra por búsqueda binaria el margen de tolerancia mínimo para que no se desate una cascada grande. **Hallazgo**: las rutas más "peligrosas" bajo este modelo no son las de mayor centralidad clásica, sino rutas cortas que actúan como válvula de escape del sistema.
+7. **`code/funct/remove_route.R`** / **`code/funct/route_cascade.R`** — simulación de cascada de fallas (adaptación de Motter & Lai, 2002) al eliminar una ruta: `remove_route()` la quita del grafo, `route_cascade()` redistribuye la carga (intermediación de arista, opcionalmente pesada por demanda real relativizada por su promedio) y hace fallar los tramos que superan su capacidad (siempre topológica, para que la demanda pueda cambiar el resultado en vez de cancelarse en la comparación), y `critical_alpha()` encuentra por búsqueda binaria el margen de tolerancia mínimo para que no se desate una cascada grande. **Hallazgo**: las rutas más "peligrosas" bajo este modelo no son las de mayor centralidad clásica, sino rutas cortas que actúan como válvula de escape del sistema.
 
 8. **`code/funct/link_prediction_data.R`** / **`code/build_route_proposals.R`** — propone rutas nuevas con respaldo estadístico: se ajustan un ERGM y un modelo de espacio latente (`ergm`/`latentnet`) sobre la versión no dirigida del grafo, con distancia geográfica, diferencia de estrato y coincidencia de localidad como covariables. Ambos modelos coinciden en que la distancia y la localidad predicen fuertemente la conectividad, mientras que la diferencia de estrato no es significativa. El resultado combinado (pares de estaciones sin tramo directo, ordenados por probabilidad predicha) queda en `data/candidatos ruta nueva.csv`.
 
    *Nota metodológica pendiente*: el estrato se trata como variable numérica (`absdiff`) en ambos modelos, lo que asume intervalos iguales entre categorías aunque es una variable ordinal; queda por decidir si vale la pena usar `nodematch` o una agrupación categórica en su lugar.
+
+9. **`code/funct/station_demand.R`** / **`code/build_route_criticality.R`** — agrega la demanda real (validaciones + salidas) por estación con `station_demand()`, incluyendo un crosswalk manual entre la codificación de estación de TMSA (validaciones/salidas) y el `stop_id` del GTFS, ya que no coinciden 1 a 1 (plataformas alternas, ampliaciones, puntos temporales por obras se remapean a su estación permanente; TransMiCable, bicicleteros y patios de alimentadoras se excluyen por no ser estaciones troncales). `build_route_criticality.R` corre `critical_alpha()` topológico y ponderado por demanda sobre las 111 rutas y guarda el ranking combinado en `data/criticidad rutas.csv`.
 
 ## Resultados
 
@@ -87,6 +93,7 @@ Hallazgos principales hasta ahora, con el paso del pipeline que los produjo:
 | TM es sistemáticamente **menos robusto** de lo esperable solo por su distribución de grado: el índice de robustez real (R ≈ 0.39, rango 0.31–0.46 en 500 corridas) queda por debajo de todo el rango de 500 réplicas del modelo nulo (R ≈ 0.46–0.50). La fragilidad viene de la forma específica de los corredores. | 6 · `null_graphs.R` + `robustness_index.R` |
 | Las rutas más "peligrosas" bajo el modelo de cascada de fallas **no son** las de mayor centralidad clásica — son rutas cortas tipo atajo (ej. B27, H27, F51, con menos tramos que el promedio del sistema) cuya eliminación sobrecarga el corredor compartido. Se observa una transición de fase nítida: una misma ruta pasa de ~400 tramos caídos en cascada a ~3 con solo 2 puntos porcentuales más de margen de tolerancia. | 7 · `remove_route.R` + `route_cascade.R` |
 | La distancia geográfica y compartir localidad predicen fuertemente si dos estaciones tienen un tramo directo (ERGM y espacio latente coinciden en signo y significancia); la diferencia de estrato **no** es significativa en ningún modelo. El candidato a ruta nueva más sólido (aparece en el top 15 de ambos modelos) es **Centro Memoria ↔ Calle 26 - Atrio**. | 8 · `link_prediction_data.R` + `build_route_proposals.R` |
+| La demanda real reordena bastante la criticidad de las rutas (correlación de Spearman de solo 0.36 con el ranking puramente topológico) — sigue tratándose de rutas cortas tipo atajo (ej. J70, B18, H27, B27), pero no las mismas ni en el mismo orden que sin datos de demanda. | 9 · `station_demand.R` + `build_route_criticality.R` |
 
 ## Requisitos
 
@@ -107,7 +114,8 @@ install.packages(c("archive", "dplyr", "igraph", "terra", "maptiles",
 - [x] Modelo nulo + índice de robustez ante remoción de estaciones
 - [x] Simulación de cascada de fallas al eliminar una ruta (Motter-Lai)
 - [x] Propuesta de rutas nuevas con respaldo estadístico (ERGM + espacio latente)
-- [ ] Scoring de criticidad de rutas combinando todos los componentes anteriores
+- [x] Simulación de cascada ponderada por demanda real y ranking de criticidad (topológico + demanda) de las 111 rutas
+- [ ] Scoring de criticidad de rutas combinando estructura + demanda + redundancia + componente social en un solo índice/cuadrante
 - [ ] Visualización final integrando todos los componentes
 
 ## Autores
