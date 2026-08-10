@@ -1,0 +1,140 @@
+"id station","station","locality","stratum"
+"10000","Portal 20  de Julio","SAN CRISTOBAL",2
+"10001","Country Sur","RAFAEL URIBE URIBE",3
+"10002","Av. Primero de Mayo","SAN CRISTOBAL",3
+"10003","Ciudad Jardín - UAN","ANTONIO NARIÑO",3
+"10004","Policarpa","SAN CRISTOBAL",3
+"10005","Bicentenario","SANTA FE",2
+"10006","San Victorino","CANDELARIA",3
+"10007","Las Nieves","SANTA FE",3
+"10008","San Diego","SANTA FE",3
+"10009","Museo Nacional","SANTA FE",4
+"10010","Estación San Bernardo","SANTA FE",2
+"12000","Puente Aranda","PUENTE ARANDA",3
+"12001","Carrera 43 - Comapan","PUENTE ARANDA",3
+"12002","CDS Carrera 32","PUENTE ARANDA",3
+"12004","San Facon Carrera 22","LOS MARTIRES",3
+"12007","Zona Industrial","PUENTE ARANDA",3
+"14001","De La Sabana","LOS MARTIRES",3
+"14004","Museo Del Oro","SANTA FE",3
+"14005","Las Aguas - Centro Colombo Americano","SANTA FE",3
+"2000","Portal Norte - Unicervantes ","USAQUEN",3
+"2001","Calle 187","USAQUEN",5
+"2101","Toberín- Foundever","SUBA",3
+"2102","Calle 161","USAQUEN",3
+"2103","Mazurén","USAQUEN",4
+"2104","Calle 146","USAQUEN",4
+"2105","Calle 142","SUBA",4
+"2200","Alcalá - Colegio S. Tomás Dominicos","SUBA",3
+"2201","Prado","SUBA",3
+"2202","Calle 127","SUBA",5
+"2204","Pepe Sierra - Utel Universidad","USAQUEN",5
+"2205","Calle 106","USAQUEN",5
+"2300","Calle 100 - Marketmedios","BARRIOS UNIDOS",6
+"2302","Virrey - Cendiatra","CHAPINERO",4
+"2303","Calle 85 - Gato Dumas","CHAPINERO",4
+"2304","Héroes - Colmena Seguros","CHAPINERO",5
+"2502","Terminal","USAQUEN",5
+"3000","Portal Suba","SUBA",3
+"3001","La Campiña","SUBA",2
+"3002","Suba - Tv. 91","SUBA",3
+"3003","21 Ángeles","SUBA",2
+"3004","Gratamira","SUBA",6
+"3005","Suba - Av. Boyacá","SUBA",4
+"3006","Niza - Calle 127","SUBA",5
+"3007","Humedal Córdoba","SUBA",5
+"3009","Av. Suba - Calle 116","SUBA",5
+"3010","Puentelargo","SUBA",5
+"3012","Suba - Calle 95","BARRIOS UNIDOS",3
+"3013","Rionegro","BARRIOS UNIDOS",3
+"3014","San Martín","BARRIOS UNIDOS",3
+"4000","Portal 80","ENGATIVA",3
+"4001","Quirigua","ENGATIVA",3
+"4002","Carrera 90","ENGATIVA",3
+"4003","Avenida Cali","ENGATIVA",3
+"4004","Granja - cra 77","ENGATIVA",3
+"4101","Minuto De Dios","ENGATIVA",3
+"4102","Boyacá","ENGATIVA",3
+"4103","Ferias","ENGATIVA",3
+"4104","Avenida 68","ENGATIVA",3
+"4105","Carrera 53","BARRIOS UNIDOS",3
+"4106","Carrera 47","BARRIOS UNIDOS",3
+"4107","Escuela Militar","BARRIOS UNIDOS",3
+"4108","Polo - FINCOMERCIO","BARRIOS UNIDOS",3
+"5000","Portal Américas","KENNEDY",2
+"5002","Biblioteca Tintal","KENNEDY",2
+"5005","Transversal 86","KENNEDY",3
+"5100","Banderas","KENNEDY",3
+"5101","Mandalay","KENNEDY",3
+"5102","Av Américas - Av. Boyacá","KENNEDY",3
+"5103","Marsella","KENNEDY",3
+"5105","Pradera - Plaza Central","PUENTE ARANDA",3
+"5107","Distrito Grafiti","PUENTE ARANDA",3
+"6000","Portal El Dorado – C.C Nuestro Bogotá","FONTIBON",3
+"6001","Modelia","FONTIBON",3
+"6002","Normandia","ENGATIVA",4
+"6100","Av. Rojas - UNISALESIANA","ENGATIVA",4
+"6101","El Tiempo - Cámara De Comercio De Bogotá","FONTIBON",4
+"6102","Salitre El Greco - Vive Claro","TEUSAQUILLO",4
+"6103","CAN - British Council","TEUSAQUILLO",4
+"6104","Gobernacion","TEUSAQUILLO",4
+"6105","Quinta Paredes","TEUSAQUILLO",4
+"6106","Corferias","TEUSAQUILLO",4
+"6107","Ciudad Universitaria- Lotería de Bogotá","TEUSAQUILLO",4
+"6108","Concejo de Bogotá","TEUSAQUILLO",4
+"6109","Centro Memoria","TEUSAQUILLO",3
+"6111","Universidades CityU","SANTA FE",3
+"7000","Portal Sur - JFK Coop. Financiera","BOSA",2
+"7001","Perdomo","BOSA",2
+"7002","C.C Paseo Villa Del Rio - Madelena","CIUDAD BOLIVAR",3
+"7003","Sevillana","KENNEDY",3
+"7004","Venecia","KENNEDY",3
+"7005","Alquería","PUENTE ARANDA",3
+"7006","General Santander","PUENTE ARANDA",3
+"7007","Cl38A sur - CENTRO MAYOR","PUENTE ARANDA",3
+"7008","NQS Calle 30 SUR","PUENTE ARANDA",3
+"7010","Bosa","CIUDAD BOLIVAR",2
+"7101","La Castellana","BARRIOS UNIDOS",4
+"7102","NQS Calle 75","BARRIOS UNIDOS",3
+"7103","Avenida Chile","BARRIOS UNIDOS",3
+"7104","7 de Agosto","BARRIOS UNIDOS",3
+"7105","Movistar Arena","TEUSAQUILLO",4
+"7106","Campin - UAN","TEUSAQUILLO",4
+"7107","Universidad Nacional","TEUSAQUILLO",4
+"7108","Av. Eldorado","TEUSAQUILLO",4
+"7109","CAD","PUENTE ARANDA",4
+"7110","Paloquemao","PUENTE ARANDA",3
+"7111","Ricaurte","PUENTE ARANDA",3
+"7112","Comuneros","PUENTE ARANDA",3
+"7113","Santa Isabel","PUENTE ARANDA",3
+"7200","Tygua-San José","LOS MARTIRES",3
+"7201","Guatoque - Veraguas","LOS MARTIRES",3
+"7503","San Mateo","SOACHA",0
+"7504","Terreros - H. Cardiovascular","SOACHA",0
+"7505","León XIII","SOACHA",2
+"7506","La Despensa","SOACHA",2
+"8000","Portal Tunal","TUNJUELITO",2
+"8001","Parque","TUNJUELITO",2
+"8002","Biblioteca","TUNJUELITO",2
+"90004","Portal Usme","USME",2
+"90007","Suba Calle 100","BARRIOS UNIDOS",3
+"90008","Danubio","RAFAEL URIBE URIBE",1
+"9001","Molinos","RAFAEL URIBE URIBE",2
+"9002","Consuelo","RAFAEL URIBE URIBE",2
+"9003","Socorro","RAFAEL URIBE URIBE",2
+"9004","Santa Lucía","RAFAEL URIBE URIBE",3
+"9100","Calle 40 Sur","RAFAEL URIBE URIBE",3
+"9101","Quiroga","RAFAEL URIBE URIBE",3
+"9103","Olaya","RAFAEL URIBE URIBE",3
+"9104","Restrepo","ANTONIO NARIÑO",3
+"9105","Fucha","ANTONIO NARIÑO",3
+"9106","Nariño","ANTONIO NARIÑO",3
+"9107","Hortúa","ANTONIO NARIÑO",3
+"9110","Avenida Jiménez","SANTA FE",3
+"9113","Calle 22","LOS MARTIRES",2
+"9114","Calle 26 - Atrio","TEUSAQUILLO",4
+"9116","Av. 39","SANTA FE",4
+"9118","Marly","CHAPINERO",3
+"9119","Calle 57","CHAPINERO",3
+"9121","Flores","BARRIOS UNIDOS",3
+"9123","Calle 76","CHAPINERO",3
