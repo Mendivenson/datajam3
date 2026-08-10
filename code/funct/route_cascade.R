@@ -9,6 +9,15 @@ edge_load <- function(graph, demand = NULL){
   carga <- igraph::edge_betweenness(graph, directed = TRUE, weights = NA)
 
   if (!is.null(demand)) {
+    # as.numeric() por sí solo borra los nombres (los id de estación); hay que reponerlos
+    demand <- setNames(as.numeric(demand), names(demand))
+
+    # se relativiza la demanda (dividiendo por su promedio) para que el factor quede centrado en 1
+    # en vez de en la escala absoluta (millones) de validaciones/salidas; de lo contrario, al
+    # comparar contra una capacidad que no está ponderada por demanda (ver route_cascade()),
+    # cualquier tramo la superaría trivialmente solo por el desajuste de escala, sin importar la ruta
+    demand <- demand / mean(demand, na.rm = TRUE)
+
     extremos        <- igraph::ends(graph, igraph::E(graph), names = TRUE)
     demanda.origen  <- demand[extremos[, 1]]
     demanda.destino <- demand[extremos[, 2]]
@@ -25,8 +34,14 @@ route_cascade <- function(graph, route.id, alpha = 0.2, demand = NULL){
   # capacidad = (1 + alpha) * carga inicial. Se elimina la ruta y se recalcula la carga en el grafo
   # reducido; cualquier tramo que supere su capacidad también falla (se elimina), y se repite hasta
   # que no haya más fallas nuevas.
+  #
+  # OJO: la capacidad SIEMPRE se calcula sin ponderar por demanda (es una propiedad estructural del
+  # tramo, no depende de cuánta gente lo usa), mientras que la carga durante la cascada sí se pondera
+  # por demanda si se pasa. Si ambas se ponderaran por el mismo factor de demanda (fijo para un tramo
+  # dado, porque sus estaciones extremo no cambian), ese factor se cancelaría en la comparación
+  # carga > capacidad y la demanda nunca podría cambiar el resultado de la cascada.
 
-  carga.inicial <- edge_load(graph, demand)
+  carga.inicial <- edge_load(graph)
   capacidad     <- (1 + alpha) * carga.inicial
   clave.original <- apply(igraph::ends(graph, igraph::E(graph), names = TRUE), 1, paste, collapse = ' -> ')
 
