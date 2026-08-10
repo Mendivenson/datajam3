@@ -76,6 +76,18 @@ Todas de acceso abierto:
 
    *Nota metodológica pendiente*: el estrato se trata como variable numérica (`absdiff`) en ambos modelos, lo que asume intervalos iguales entre categorías aunque es una variable ordinal; queda por decidir si vale la pena usar `nodematch` o una agrupación categórica en su lugar.
 
+## Resultados
+
+Hallazgos principales hasta ahora, con el paso del pipeline que los produjo:
+
+| Hallazgo | Paso |
+|---|---|
+| El grafo es fuertemente conexo (139/139 estaciones en un solo componente), con distancia promedio de 7 tramos y diámetro de 12 — topología alargada, no una malla densa. Transitividad global de 0.35. | 5 · `descriptive_analysis.R` |
+| Avenida Jiménez y Ricaurte son las estaciones más importantes tanto por grado/fuerza como por intermediación — coincide con su rol real de intercambio en el sistema. La intermediación también revela estaciones "silenciosamente críticas" (Bosa, Gobernación) que no destacan por grado pero son paso obligado entre ramales. | 5 · `descriptive_analysis.R` |
+| TM es sistemáticamente **menos robusto** de lo esperable solo por su distribución de grado: el índice de robustez real (R ≈ 0.39, rango 0.31–0.46 en 500 corridas) queda por debajo de todo el rango de 500 réplicas del modelo nulo (R ≈ 0.46–0.50). La fragilidad viene de la forma específica de los corredores. | 6 · `null_graphs.R` + `robustness_index.R` |
+| Las rutas más "peligrosas" bajo el modelo de cascada de fallas **no son** las de mayor centralidad clásica — son rutas cortas tipo atajo (ej. B27, H27, F51, con menos tramos que el promedio del sistema) cuya eliminación sobrecarga el corredor compartido. Se observa una transición de fase nítida: una misma ruta pasa de ~400 tramos caídos en cascada a ~3 con solo 2 puntos porcentuales más de margen de tolerancia. | 7 · `remove_route.R` + `route_cascade.R` |
+| La distancia geográfica y compartir localidad predicen fuertemente si dos estaciones tienen un tramo directo (ERGM y espacio latente coinciden en signo y significancia); la diferencia de estrato **no** es significativa en ningún modelo. El candidato a ruta nueva más sólido (aparece en el top 15 de ambos modelos) es **Centro Memoria ↔ Calle 26 - Atrio**. | 8 · `link_prediction_data.R` + `build_route_proposals.R` |
+
 ## Requisitos
 
 Paquetes de R usados en el proyecto:
