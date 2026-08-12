@@ -34,11 +34,24 @@ criticidad$route.id <- as.character(criticidad$route.id)
 
 criticidad$redundancia <- sapply(criticidad$route.id, route_redundancy, graph = tm.graph)
 
-criticidad$'pct estaciones vulnerables' <- sapply(criticidad$route.id, function(r) {
-  estaciones <- route_stations(r, tm.graph)
+pct.vulnerables <- function(route.id, umbral){
+  estaciones <- route_stations(route.id, tm.graph)
   estrato    <- social$stratum[social$`id station` %in% estaciones]
-  mean(estrato %in% c(1, 2), na.rm = TRUE) * 100
-})
+  mean(estrato <= umbral, na.rm = TRUE) * 100
+}
+
+criticidad$'pct vulnerables estrato 1'     <- sapply(criticidad$route.id, pct.vulnerables, umbral = 1)
+criticidad$'pct estaciones vulnerables'    <- sapply(criticidad$route.id, pct.vulnerables, umbral = 2)
+criticidad$'pct vulnerables estrato 3'     <- sapply(criticidad$route.id, pct.vulnerables, umbral = 3)
+
+# CALCULO -> sensibilidad del umbral de vulnerabilidad: ¿el ranking de rutas más "vulnerables"
+#            cambia mucho si el corte es estrato <=1 o <=3 en vez de <=2? Se compara con
+#            correlación de Spearman entre los 3 rankings (no solo el corte que se usa en el
+#            cuadrante final)
+cat('Correlación (Spearman) del ranking de % vulnerables entre umbrales:\n')
+cat('  <=1 vs. <=2:', round(cor(criticidad$`pct vulnerables estrato 1`, criticidad$`pct estaciones vulnerables`, method = 'spearman'), 3), '\n')
+cat('  <=2 vs. <=3:', round(cor(criticidad$`pct estaciones vulnerables`, criticidad$`pct vulnerables estrato 3`, method = 'spearman'), 3), '\n')
+cat('  <=1 vs. <=3:', round(cor(criticidad$`pct vulnerables estrato 1`, criticidad$`pct vulnerables estrato 3`, method = 'spearman'), 3), '\n')
 
 # ------------------------------------- GUARDAR ---------------------------------------------
 
