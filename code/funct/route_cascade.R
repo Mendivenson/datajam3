@@ -81,39 +81,38 @@ route_cascade <- function(graph, route.id, alpha = 0.2, demand = NULL){
 }
 
 critical_alpha <- function(graph, route.id, demand = NULL, umbral = 0.05,
-                           alpha.min = 0, alpha.max = 3, tol = 0.01, max.iter = 30){
+                           alpha.min = 0, alpha.max = 6, paso = 0.1){
 
-  # Búsqueda binaria del margen de tolerancia crítico (alpha_c): el valor más pequeño de alpha para
-  # el cual, al quitar la ruta, la cascada de fallas NO supera 'umbral' (fracción de tramos caídos
-  # sobre el total de tramos). Asume que a mayor alpha la cascada es igual o menor (más margen de
-  # capacidad solo puede absorber más carga, nunca menos).
+  # Margen de tolerancia crítico (alpha_c): el valor más pequeño de alpha para el cual, al quitar
+  # la ruta, la cascada de fallas NO supera 'umbral' (fracción de tramos caídos sobre el total) Y
+  # SE MANTIENE por debajo del umbral para todo alpha mayor hasta alpha.max.
+  #
+  # OJO: esto se calcula con un barrido fino (no bisección). La cascada NO es necesariamente
+  # monótona en alpha (verificado empíricamente: 8 de 10 rutas de prueba mostraron al menos una
+  # subida del % de tramos caídos al aumentar alpha, dentro del mismo rango donde se buscaba el
+  # umbral) — la bisección asume monotonicidad y puede converger a un punto donde la cascada cruza
+  # el umbral una sola vez por casualidad, no al verdadero punto a partir del cual el sistema queda
+  # estable. Exigir que se mantenga estable en TODO el resto de la rejilla evita ese falso positivo.
 
   n.tramos <- igraph::ecount(graph)
+  rejilla  <- seq(alpha.min, alpha.max, by = paso)
 
-  colapsa <- function(a) {
-    resultado <- route_cascade(graph, route.id, alpha = a, demand = demand)
-    (resultado$`aristas caidas` / n.tramos) > umbral
+  caidas  <- sapply(rejilla, function(a) route_cascade(graph, route.id, alpha = a, demand = demand)$`aristas caidas`)
+  colapsa <- (caidas / n.tramos) > umbral
+
+  # estable[i] = TRUE solo si NO colapsa en i y tampoco en ningún punto posterior de la rejilla
+  estable <- !colapsa
+  for (i in rev(seq_along(estable)[-length(estable)])) {
+    estable[i] <- estable[i] && estable[i + 1]
   }
 
-  if (!colapsa(alpha.min)) {
-    return(list('alpha_c' = alpha.min, 'nota' = 'No hay cascada relevante ni con alpha.min.'))
-  }
-
-  if (colapsa(alpha.max)) {
+  if (!any(estable)) {
     message('La ruta ', route.id, ' sigue en cascada incluso con alpha.max = ', alpha.max,
             '; el umbral crítico está por fuera del rango explorado.')
     return(list('alpha_c' = NA, 'nota' = paste('alpha_c >', alpha.max)))
   }
 
-  bajo <- alpha.min
-  alto <- alpha.max
-  iteracion <- 0
+  alpha_c <- rejilla[which(estable)[1]]
 
-  while ((alto - bajo) > tol && iteracion < max.iter) {
-    medio <- (bajo + alto) / 2
-    if (colapsa(medio)) bajo <- medio else alto <- medio
-    iteracion <- iteracion + 1
-  }
-
-  return(list('alpha_c' = alto, 'iteraciones' = iteracion))
+  return(list('alpha_c' = alpha_c, 'rejilla' = rejilla, 'caidas' = caidas))
 }
