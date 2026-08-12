@@ -27,7 +27,7 @@ edge_load <- function(graph, demand = NULL){
   return(carga)
 }
 
-route_cascade <- function(graph, route.id, alpha = 0.2, demand = NULL){
+route_cascade <- function(graph, route.id, alpha = 0.2, demand = NULL, capacity.attr = 'weight'){
 
   # Simula el efecto de eliminar una ruta sobre la red, incluyendo posibles fallas en cadena
   # (adaptación de Motter & Lai, 2002): se calcula la carga inicial de cada tramo y se le asigna una
@@ -37,17 +37,19 @@ route_cascade <- function(graph, route.id, alpha = 0.2, demand = NULL){
   #
   # OJO: la capacidad queda anclada a la magnitud de la intermediación (para no desajustar la
   # escala frente a 'carga.actual', que también se mide en esas unidades), pero se modula por
-  # 'weight' (cuántas rutas ya sirven el tramo) relativizado por su promedio: un tramo con más
-  # rutas que el promedio recibe proporcionalmente más margen de capacidad, y uno con menos,
-  # proporcionalmente menos. 'weight' es la medida directa de capacidad instalada (servicio real),
-  # mientras que la intermediación por sí sola es ciega a cuánto servicio ya tiene cada tramo.
+  # 'capacity.attr' (por defecto 'weight' = cuántas rutas ya sirven el tramo) relativizado por su
+  # promedio: un tramo con más rutas/viajes que el promedio recibe proporcionalmente más margen de
+  # capacidad, y uno con menos, proporcionalmente menos. Se puede pasar 'weight_viajes' (frecuencia
+  # real de viajes, ver build_frequency_graph.R) en vez de 'weight' (conteo de rutas) como chequeo
+  # de sensibilidad — 'weight' sigue siendo el atributo que remove_route() usa para decidir si un
+  # tramo desaparece del grafo, así que ese no cambia.
   # Además, la capacidad nunca se pondera por demanda (es una propiedad de la infraestructura, no
   # depende de cuánta gente la usa), mientras que la carga durante la cascada sí se pondera por
   # demanda si se pasa. Si ambas usaran el mismo factor de demanda (fijo para un tramo dado, porque
   # sus estaciones extremo no cambian), ese factor se cancelaría en la comparación carga > capacidad
   # y la demanda nunca podría cambiar el resultado de la cascada.
 
-  peso.relativo       <- igraph::edge_attr(graph, 'weight') / mean(igraph::edge_attr(graph, 'weight'))
+  peso.relativo       <- igraph::edge_attr(graph, capacity.attr) / mean(igraph::edge_attr(graph, capacity.attr))
   capacidad.instalada <- edge_load(graph) * peso.relativo
   capacidad           <- (1 + alpha) * capacidad.instalada
   clave.original <- apply(igraph::ends(graph, igraph::E(graph), names = TRUE), 1, paste, collapse = ' -> ')
@@ -81,7 +83,7 @@ route_cascade <- function(graph, route.id, alpha = 0.2, demand = NULL){
 }
 
 critical_alpha <- function(graph, route.id, demand = NULL, umbral = 0.05,
-                           alpha.min = 0, alpha.max = 6, paso = 0.1){
+                           alpha.min = 0, alpha.max = 6, paso = 0.1, capacity.attr = 'weight'){
 
   # Margen de tolerancia crítico (alpha_c): el valor más pequeño de alpha para el cual, al quitar
   # la ruta, la cascada de fallas NO supera 'umbral' (fracción de tramos caídos sobre el total) Y
@@ -97,7 +99,7 @@ critical_alpha <- function(graph, route.id, demand = NULL, umbral = 0.05,
   n.tramos <- igraph::ecount(graph)
   rejilla  <- seq(alpha.min, alpha.max, by = paso)
 
-  caidas  <- sapply(rejilla, function(a) route_cascade(graph, route.id, alpha = a, demand = demand)$`aristas caidas`)
+  caidas  <- sapply(rejilla, function(a) route_cascade(graph, route.id, alpha = a, demand = demand, capacity.attr = capacity.attr)$`aristas caidas`)
   colapsa <- (caidas / n.tramos) > umbral
 
   # estable[i] = TRUE solo si NO colapsa en i y tampoco en ningún punto posterior de la rejilla
